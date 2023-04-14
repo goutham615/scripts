@@ -1,0 +1,35 @@
+---
+  - name: Play For Creating Multiple User Accounts
+    hosts: all
+    vars:
+      shell_folder: "/bin/bash"
+      state_status: "absent"
+    tasks:
+    - name: Create Users
+      user:
+        name: "{{ item }}"
+        home: /home/{{ item }}
+        shell: "{{ shell_folder }}"
+        password: "{{ my_password | password_hash('sha512') }}"
+        update_password: on_create
+        state: "{{ state_status }}"
+      loop:
+        - megastar
+        - superstar
+        - realstar
+        - powerstar
+        - youngtiger
+        - stylishstar
+    - name: Testing No_Log
+      shell: echo "{{ my_password }}"
+      no_log: true
+
+
+
+#ansible-playbook -i alpha/hosts user2.yml --extra-vars "my_password=India@123456" --check
+#ansible-playbook -i alpha/hosts user2.yml --extra-vars "my_password=India@123456" --extra-vars "state_status=absent" -v
+Variable Presedence:
+https://subscription.packtpub.com/book/networking_and_servers/9781787125681/1/ch01lvl1sec13/variable-precedence
+1.extra-vars
+2.task vars
+

@@ -1,0 +1,41 @@
+FOR SCANNING SPRINGBOOT APP WITH MAVEN:
+---------------------------------------
+mvn clean verify sonar:sonar \
+  -Dsonar.projectKey=DevOpsB28 \
+  -Dsonar.host.url=http://ec2-35-153-213-51.compute-1.amazonaws.com:9000 \
+  -Dsonar.login=sqp_fd431ebda8818178698259cc0f3f688b266ec168
+  
+
+  
+FOR SCANNING TERRAFORM:
+--------------------------------------- 
+https://techexpert.tips/sonarqube/sonarqube-scanner-installation-ubuntu-linux/
+
+wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
+unzip sonar-scanner-cli-4.7.0.2747-linux.zip
+mv sonar-scanner-4.7.0.2747-linux/ /opt/sonar-scanner
+nano /opt/sonar-scanner/conf/sonar-scanner.properties
+sonar.host.url=http://localhost:9000
+sonar.sourceEncoding=UTF-8
+
+
+nano /etc/profile.d/sonar-scanner.sh
+#/bin/bash
+export PATH="$PATH:/opt/sonar-scanner/bin"
+
+reboot
+#source /etc/profile.d/sonar-scanner.sh
+env | grep PATH
+
+sonar-scanner -v
+
+sonar-scanner \
+  -Dsonar.projectKey=Terraform \
+  -Dsonar.sources=. \
+  -Dsonar.host.url=http://ec2-35-153-213-51.compute-1.amazonaws.com:9000 \
+  -Dsonar.login=sqp_fefd12c5b6872932e12b32e13bf34dd7dad6791e
+  
+  
+
+
+

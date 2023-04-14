@@ -1,0 +1,46 @@
+local_file & local_sensitive_file
+
+resource "local_file" "foo" {
+    content  = "foo!"
+    filename = "${path.module}/foo.bar"
+}
+
+resource "local_sensitive_file" "foo" {
+    content  = "foo!"
+    filename = "${path.module}/foo.bar"
+}
+
+	
+https://stackoverflow.com/questions/45489534/best-way-currently-to-create-an-ansible-inventory-from-terraform
+
+# generate inventory file for Ansible
+resource "local_file" "hosts_cfg" {
+  content = templatefile("${path.module}/templates/hosts.tpl",
+    {
+      kafka_processors = aws_instance.kafka_processor.*.public_ip
+      test_clients = aws_instance.test_client.*.public_ip
+    }
+  )
+  filename = "../ansible/inventory/hosts.cfg"
+}
+
+Where hosts.tpl template file (future Ansible inventory) may look like this:
+
+[kafka_broker_hosts]
+%{ for ip in kafka_processors ~}
+${ip}
+%{ endfor ~}
+
+[test_client_hosts]
+%{ for ip in test_clients ~}
+${ip}
+%{ endfor ~}
+
+End result:
+
+[kafka_broker_hosts]
+18.224.140.239
+18.224.140.234
+
+[test_client_hosts]
+3.21.134.83

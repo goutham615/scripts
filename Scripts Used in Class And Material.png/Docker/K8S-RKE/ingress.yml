@@ -1,0 +1,51 @@
+#When using Rancher RKE with Nginx Ingress
+#make sure you use mutli-value DNS rather than NLB in AWS.
+#Vote Service Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vote-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  - hosts:
+      - www.k8sb10.xyz
+    secretName: mywebapp
+  rules:
+  - host: www.k8sb10.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vote
+            port:
+              number: 80
+---
+#Result Service Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: result-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  - hosts:
+      - result.k8sb10.xyz
+    secretName: mywebapp
+  rules:
+  - host: result.k8sb10.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: result
+            port:
+              number: 80

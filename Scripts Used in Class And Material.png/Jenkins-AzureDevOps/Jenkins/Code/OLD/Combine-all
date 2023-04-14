@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    stages {
+        stage ('Invoke_Packer_Pipeline') {
+            when {
+                    expression {
+                        params.CREATE_IMAGE == 'YES'
+                    }
+                }
+            steps {
+                build job: 'Packer-Image-Pipeline'
+            }
+        }
+        stage ('Invoke_Terraform_Pipeline') {
+            when {
+                    expression {
+                        params.DESTROY == 'NO'
+                    }
+                }
+            steps {
+                build job: 'Terraform-Image-Pipeline'
+            }
+        }
+        stage ('Terraform_Destroy') {
+            when {
+                    expression {
+                        params.DESTROY == 'YES'
+                    }
+                }
+            steps {
+                build job: 'Destroy-Terraform-Pipeline'
+            }
+        }
+        
+    }
+}

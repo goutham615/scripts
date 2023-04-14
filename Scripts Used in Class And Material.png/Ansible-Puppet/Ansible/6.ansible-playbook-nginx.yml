@@ -1,0 +1,1190 @@
+---------------------Basic-PLaybook-To-Install-Nginx----------------------
+---
+  - name: Playbook For Installating Nginx
+    hosts: web
+    gather_facts: no
+    tasks:
+      - name: Perform APT Update
+        shell: apt update
+
+      - name: Install Nginx
+        shell: apt install nginx -y
+
+      - name: Start Nginx Service
+        shell: service nginx start
+        
+--------------------NGINX Install Using Controller Local Folder--------------------------------
+---
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    gather_facts: no
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+       - name: Copy the files to index destination folder.
+         copy: >
+            src=/tmp/dockertest1/index.html
+            dest=/var/www/html/index.nginx-debian.html
+            owner=root
+            group=root
+            mode=0644notif
+       - name: Copy the style files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/style.css
+            dest=/var/www/html/style.css
+            owner=root
+            group=root
+            mode=0644
+       - name: Copy the javascript files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            owner=rootn
+            group=root
+            mode=0644
+       - name: restart nginx
+         command: service nginx restart
+         
+-------------------------------------------COMPLETED---------------------------------------------------
+
+--------------------TAGS for Plays & Installing Application--------------------------------------------
+---
+  - name: Play for installing Nginx
+    hosts: web:app
+    tasks:
+     - name: Perform Apt Update
+       shell: apt update
+       tags:
+         - apt
+
+     - name: Install Nginx using Apt
+       apt:
+         name: nginx
+         state: present
+       tags:
+        - nginxtask
+
+     - name: Start the Nginx Service
+       shell: service nginx start
+       tags:
+        - service
+    tags:
+     - nginx
+
+  - name: Play for installing Jq, wget, curl
+    hosts: db
+    tasks:
+     - name: Perform Apt Update
+       shell: apt update
+
+     - name: Installing Tools
+       apt:
+         name: "{{ item }}"
+         state: present
+       with_items:
+         - jq
+         - wget
+         - curl
+    htags:
+     - tools
+     
+ansible-playbook -i hosts nginx3.yaml --tags tools && ansible-playbook -i hosts nginx3.yaml --tags nginx
+---------------------------------------------------------------------------
+#Play for install & configure Nginx
+- name: Play for Installing Nginx
+  tags: nginx
+  hosts: web
+  tasks:
+    - name: Perform APT UPDATE
+      shell: apt update
+
+    - name: Install Nginx
+      shell: apt install nginx -y
+
+    - name: Start Nginx Service
+      shell: service nginx start
+      
+#Play for creating devuser 1 to 5
+- name: Play for Creating devuser 1 to 5
+  tags: devusers
+  hosts: web:app:db
+  tasks:
+    - name: Creating devuser 1 to 5
+      user:
+        name: "{{ item }}"
+        state: present
+      with_items:
+          - devuser1
+          - devuser2
+          - devuser3
+          - devuser4
+          - devuser5
+
+#Install AWS CLI on App Servers
+- name: Install AWS CLI on App Servers
+  tags: awscli
+  hosts: app
+  tasks:
+    - name: Install unzip on app servers
+      shell: apt install unzip -y
+
+    - name: Download AWS CLI
+      get_url:
+          url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+          dest: ./awscliv2.zip
+
+    - name: Unzip file & Install
+      shell: unzip awscliv2.zip && ./aws/install
+
+--------------------NGINX Install Using Controller Local Folder With TAGS for Tasks---------------------
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    #gather_facts: no
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+         tags:
+           - update
+
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+         tags:
+           - install
+       - name: Copy the files to index destination folder.
+         copy: >
+            src=/tmp/dockertest1/index.html
+            dest=/var/www/html/index.nginx-debian.html
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - html
+       - name: Copy the style files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/style.css
+            dest=/var/www/html/style.css
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - css
+
+       - name: Copy the javascript files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - js
+
+       - name: restart nginx
+         command: service nginx restart
+         tags:
+          - service
+
+-------------------------------------------COMPLETED---------------------------------------------------
+
+--------------------------------NGINX Install Using Client Local Nginx Folder--------------------------
+---
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    gather_facts: no
+    serial: 1 #Executes the playbook one host at a time.
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+         tags:
+           - update
+
+       - name: Clone Git Repo
+         shell: cd /tmp && git clone https://github.com/mavrick202/dockertest1.git
+         tags:
+           - clone
+
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+         tags:
+           - install
+
+       - name: Copy the files to index destination folder.
+         copy: >
+            src=/tmp/dockertest1/index.html
+            dest=/var/www/html/index.nginx-debian.html
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         ignore_errors: yes #Will Proceed to next task even it failed.
+         tags:
+           - index
+
+       - name: Copy the style files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/style.css
+            dest=/var/www/html/style.css
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - style
+
+       - name: Copy the javascript files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - js
+
+       - name: restart nginx
+         command: service nginx restart
+         tags:
+          - restart
+
+       - name: Delete Git Repo
+         shell: rm -rf /tmp/dockertest1
+         tags:
+          - delete
+         
+-----Download-Files-From-Client-To-Local----------
+---
+- hosts: pvt
+  gather_facts: no 
+  tasks:
+  - name: ansible copy file from remote to local.
+    fetch:
+     src: /var/www/html/index.nginx-debian.html
+     dest: /tmp 
+     #This will create the folder with the machine name and copy the files
+
+- hosts: pvt
+  gather_facts: yes
+  become: yes
+  become_user: root
+  serial: 1
+  vars:
+   newhost: "{{ ansible_facts['hostname']}}"
+  tasks:
+  - name: Generate Random
+    shell: date +%s
+    register: rannumber
+  - debug:
+      var: rannumber.stdout
+  - name: ansible copy file from remote to local.
+    fetch:
+     src: /etc/hostname
+     dest: /tmp/hostname{{ rannumber.stdout }}
+     flat: yes
+  - name: ansible copy file from remote to local with ansible_fact_hostname.
+    fetch:
+     src: /etc/hostname
+     dest: /tmp/{{newhost}}
+     flat: yes
+     #Will Download file only but dont create the client folder and path
+-------------------TASK-EXECUTION-ORDER------------------------
+#!/bin/bash
+ansible-playbook -i hosts nginx2.yaml --tags update,clone,install
+ansible-playbook -i hosts nginx2.yaml --tags js
+ansible-playbook -i hosts nginx2.yaml --tags style
+ansible-playbook -i hosts nginx2.yaml --tags index,deleterepo
+
+    
+pre_tasks - > Before Task Execution
+post_tasks -> After Tasks Execution
+Refer to file pre_post_tasks.yml for pre and post tasks.
+
+-------------------------------------------COMPLETED---------------------------------------------------
+-------------------------------------------------PLAYBOOK-WITH-TAGS-HANDLER----------------------------
+---
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    ignore_errors: true
+    gather_facts: yes
+    tags:
+      nginx
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+         tags:
+           - update
+
+       - name: Clone Git Repo
+         shell: cd /tmp && git clone -b DevOpsB19 https://github.com/mavrick202/dockertest1.git
+         tags:
+           - git
+
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+         tags:
+             install
+
+       - name: Copy the files to index destination folder.
+         copy: >
+            src=/tmp/dockertest1/index.html
+            dest=/var/www/html/index.nginx-debian.html
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - index
+         notify:
+            - restart nginx
+            - create testfolder in tmp
+
+       - name: Copy the style files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/style.css
+            dest=/var/www/html/style.css
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - style
+         notify:
+            - restart nginx
+            - create testfolder in tmp
+
+       - name: Copy the javascript files to  destination folder.
+         copy: >
+            src=/tmp/dockertest1/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - index
+         notify:
+            - restart nginx
+            - create testfolder in tmp
+
+       - name: Delete Git Repo from tmp
+         shell: rm -rf /tmp/dockertest1
+         tags:
+           - delete
+    handlers:
+       - name: restart nginx
+         command: service nginx restart
+       - name: create testfolder in tmp
+         shell: |
+           rm -rf /tmp/testfolder
+           mkdir /tmp/testfolder
+           echo 'Welcome To Ansible Handler' >> /tmp/testfolder/testfile
+         
+-------------------------------------------------PLAYBOOK-WITH-TAGS-HANDLER-VARIABLES_REGISTER---------
+---
+- name: Play for Install Nginx on WebServers
+  hosts: web
+  gather_facts: no
+  tasks:
+       - name: Run Apt Update
+         shell: apt update
+
+       - name: Check OS Version
+         shell: cat /etc/lsb-release
+         register: os_version
+         tags:
+           - os
+       - debug:
+           var: os_version['stdout_lines'][1]
+         tags:
+           - os
+       - name: Check Uptime
+         shell: uptime
+         register: uptime
+         tags:
+           - uptime
+       - name: Get FQDN
+         shell: curl http://169.254.169.254/latest/meta-data/local-hostname
+         register: fqdn
+         tags:
+           - fqdn
+       - set_fact: swarm_name={{ fqdn.stdout }}
+       - debug: var=swarm_name
+       - name: Write Swarm Manager Name To File
+         shell: echo {{ swarm_name }} >> /tmp/swarmname
+
+       - debug:
+           var: uptime['stdout']
+         tags:
+           - uptime
+
+       - name: Clone Git Repo
+         shell: cd /tmp && git clone https://github.com/mavrick202/dockertest1.git
+
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+
+       - name: Copy the files to index destination folder.
+         copy: >
+            src=/tmp/dockertest1/index.html
+            dest=/var/www/html/index.nginx-debian.html
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         notify:
+          - restart nginx
+         tags:
+           - index
+       - name: Copy the style files to  destination folder.
+         notify:
+          - restart nginx
+         copy: >
+            src=/tmp/dockertest1/style.css
+            dest=/var/www/html/style.css
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - style
+
+       - name: Copy the javascript files to  destination folder.
+         notify:
+          - restart nginx
+         copy: >
+            src=/tmp/dockertest1/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            remote_src=yes
+            owner=root
+            group=root
+            mode=0644
+         tags:
+           - js
+
+       - name: Delete Git Repo
+         shell: rm -rf /tmp/dockertest1
+
+  handlers:
+    - name: restart nginx
+      command: service nginx restart
+--------------------------------------------------ANSIBLE SHELL VS COMMAND VS RAW----------------------
+Shell vs. Command
+
+A typical example are the Ansible modules Shell and Command. In the most use cases both modules lead to the same goal. Here are the main differences between these modules.
+
+    With the Command module the command will be executed without being proceeded through a shell. 
+    As a consequence some variables like $HOME are not available. And also stream operations like <, >, | and & will not work.
+    
+    The Shell module runs a command through a shell, by default /bin/sh. 
+    This can be changed with the option executable. Piping and redirection are here therefor available.
+    
+    The command module is more secure, because it will not be affected by the user’s environment.
+    
+RAW Module:
+
+ Functionally, the Raw Module works like the Shell Module. The key difference is that Ansible doesn't do any error checking, and STDERR, STDOUT and Return Code is returned. 
+ Other than that, Ansible has no idea what happens, because it just executes the command over SSH directly. So while the Shell Module will use /bin/sh by default, the Raw Module just uses whatever the user's personal default shell might be.
+
+Why would a person decide to use the Raw Module? It doesn't require Python on the remote computer—at all. Although it's true that most servers have Python installed by default, or easily could have it installed, many embedded devices don't and can't have Python installed. 
+For most configuration management tools, not having an agent program installed means the remote device can't be managed. With Ansible, if all you have is SSH, you still can execute remote commands using the Raw Module. I've used the Raw Module to manage Bitcoin miners that have a very minimal embedded environment. It's a powerful tool, and when you need it, it's invaluable! 
+
+-------------------------------------------REGISTER-SET-FACTS------------------------------------------
+---
+  - name: Playbook-1
+    hosts: web1
+    tasks:
+      - name: Run a shell command and register its output as a variable
+        shell: cat /etc/lsb-release | grep -i DISTRIB_RELEASE | tr -d '"' | cut -d '=' -f2
+        register: foo_result
+        ignore_errors: true
+      - set_fact: the_token={{ foo_result.stdout }}
+      - debug:
+         var: foo_result.stdout_lines
+
+  - name: Playbook-2
+    hosts: app1
+    tasks:
+    - name: Get The Token Value
+      shell: echo {{ hostvars['web1']['the_token'] }}
+      register: the_token
+    - debug:
+       var: the_token.stdout_lines
+
+  - name: Playbook-3
+    hosts: db1
+    tasks:
+    - name: Get The Token Value
+      shell: echo {{ hostvars['web1']['the_token'] }}
+      register: the_token
+    - debug:
+       var: the_token.stdout_lines
+
+------------------------DIFF BETWEEN | & > in Ansible PLaybook----------------------------------------
+- name: Testing | & >
+  hosts: web1
+  tags:
+    - play2
+  tasks:
+    - name: Testing Pipe |
+      shell: |  #Below are considered as line by line
+        for I in {1..10}
+        do
+        echo $I
+        done
+      register: foo_result
+    - debug:
+        msg: The OS Family is {{ foo_result.stdout_lines }}
+    - name: Testing Arrow >
+      shell: > #Below are taken as single line with spaces
+        echo "Hello
+        welcome to
+        the Ansible Class"
+      register: foo_result
+    - debug:
+        msg: The OS Family is {{ foo_result.stdout_lines }}
+
+-------------------------------------------VARS-WHEN-WITHITEMS-FACTS-TAGS------------------------------
+---
+- name: Create set of users
+  hosts: all
+  gather_facts: yes
+  vars:
+    os1family: "Debian"
+    os2family: "RedHat"
+    password: "$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d."
+  tasks:
+    - name: Create Debian Users 1,2,3,4,5
+      user: >
+        name={{ item }}
+        shell=/bin/bash
+        password={{ password }}
+      with_items:
+        - debuser1
+        - debuser2
+        - debuser3
+        - debuser4
+        - debuser5
+      when: ansible_os_family == "{{ os1family }}"
+    - debug:
+        msg: The OS Family is {{ ansible_os_family }}
+      tags:
+        - ubuntu
+        - test
+    - name: Create RHEL Users 1,2,3,4,5
+      user: >
+        name={{ item }}
+        shell=/bin/bash
+        password={{ password }}
+      with_items:
+        - rheluser1
+        - rheluser2
+        - rheluser3
+        - rheluser4
+        - rheluser5
+      when: ansible_os_family == "{{ os2family }}"
+    - debug:
+        msg: The OS Family is {{ ansible_os_family }}
+      tags:
+        - rhel
+        - prod
+----------------------------------------CHECK-PYTHON-INSTALL-PYTHON-----------------------------------------------------
+---
+- name: Check for Python Version 2 & 3
+  hosts: rhel1
+  gather_facts: true
+  tasks:
+    - name: Check Python
+      raw: test -e /usr/bin/python
+      changed_when: false
+      failed_when: false
+      register: check_python
+      ignore_errors: True
+    - debug:
+        var: check_python
+    - name: Check Python 3
+      raw: test -e /usr/bin/python3
+      changed_when: false
+      failed_when: false
+      register: check_python3
+    - debug:
+        var: check_python3
+    - name: Install Python3 on RHEL
+      raw: yum -y install python3
+      when: check_python3.rc != 0
+      
+## We can uninstall packages in RHEL using rpm -e --nodeps <package name>
+      
+
+-------------------------ANSIBLE TEMPLATES USING JINJA2--------------------------------------------------
+
+Clone below repo to /tmp on the contrller as remote_src not possible with template.
+https://github.com/mavrick202/ansibletemplatetesting.git
+
+Playbook with Variables:
+
+---
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    gather_facts: yes
+    vars:
+      custom_heading: "Welcome To DevOps B17 Batch Training By Sreeharsha Veerapalli"
+      todays_date: "{{ ansible_facts['date_time']['date'] }}"
+      host_name: "{{ ansible_facts['hostname'] }}"
+      fqdn_name: "{{ ansible_facts['fqdn'] }}"
+      os_family: "{{ ansible_facts['distribution'] }}"
+      os_dest: "{{ ansible_facts['distribution_version'] }}"
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+       - name: Copy the index.j2 Template to index destination folder.
+         template: >
+            src=/tmp/ansibletemplatetesting/index.j2
+            dest=/var/www/html/index.nginx-debian.html
+            owner=root
+            group=root
+            mode=0644
+       - name: Copy the style files to destination folder.
+         copy: >
+            src=/tmp/ansibletemplatetesting/style.css
+            dest=/var/www/html/style.css
+            owner=root
+            group=root
+            mode=0644
+       - name: Copy the javascript files to destination folder.
+         copy: >
+            src=/tmp/ansibletemplatetesting/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            owner=root
+            group=root
+            mode=0644
+       - name: restart nginx
+         command: service nginx restart
+         
+         
+         
+index.j2 jinja with the html :
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="style.css">
+        <title>Color Game</title>
+</head>
+<body>
+        <h1>{{ custom_heading }}</h1>
+        <h1> Todays date is: {{ todays_date }} </h1>
+        <h1> Server hostname is: {{ host_name }} </h1>
+        <h1> Server FQDN is: {{ fqdn_name }} </h1>
+        <h1> Server IP Address is: {{ ip_address }} </h1>
+        <h1> Server OS Flavor: {{ os_family }} </h1>
+        <h1> Server OS Version is: {{ os_dest }} </h1>
+
+
+       <div id="smallcont">
+                <div></div>
+                <div id="try1">Lets Play</div>
+        </div>
+        <div id="container">
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+        </div>
+
+</body>
+<script type="text/javascript" src="scorekeeper.js"></script>
+</html>
+<script type="text/javascript" src="scorekeeper.js"></script>
+</html>
+
+https://blog.knoldus.com/ansible-playbook-using-templates/
+
+root@controller:/etc/ansible# cat friends.yml
+---
+  - hosts: all
+    vars:
+       friends: ['Sree','Harsha','Raju', 'Kumar']
+       ports: [80, 443, 8080]
+    tasks:
+       - name: Template Loop example.
+         template:
+               src: example2.j2
+               dest: /tmp/output.txt
+
+root@controller:/etc/ansible# cat example2.j2
+#Example of template module loop with a list.
+{% for item in friends %}
+  My Friends name is {{ item }}.
+  My Container OS is {{ ansible_os_family }}
+{% endfor %}
+
+ANSIBLE TEMPLATES FOR MYSQL:
+https://mydbops.wordpress.com/2019/04/17/jinja2-for-better-ansible/
+
+
+root@controller:/tmp/ansibletemplatetesting# cat ipaddress.yml
+---
+  - hosts: all
+    vars:
+       friends: ['Sree','Harsha','Raju', 'Kumar']
+       ports: [80, 443, 8080]
+    tasks:
+       - debug: var=hostvars[inventory_hostname]['ansible_default_ipv4']['address']
+       - debug: var=hostvars[server]['ansible_default_ipv4']['address']
+       - name: Template Loop example.
+         template:
+          src: example2.j2
+          dest: /tmp/output.yml
+          
+    
+root@controller:/tmp/ansibletemplatetesting# cat example2.j2
+[allhosts]
+{% for server in ansible_play_hosts_all %}
+{{ hostvars[server]['ansible_default_ipv4']['address'] }} http_port=80 ansible_port=5555 ansible_user=ansibleadmin
+{% endfor %}
+
+-----------------------ANSIBLE-ROLES------------------------------------------------------
+https://www.learnitguide.net/2018/02/ansible-roles-explained-with-examples.html
+
+https://github.com/geerlingguy/ansible-role-mysql
+https://galaxy.ansible.com/geerlingguy/mysql
+ansible-galaxy init /etc/ansible/roles/nginxinstall --offline
+ansible-galaxy init /etc/ansible/roles/docker_swarm --offline
+ansible-galaxy install  --roles-path=/etc/ansible/roles/mysql geerlingguy.mysql
+
+Install Ubuntu 20.04 on AWS, copy controller public key to authorized keys on the db server.
+Create [aws] in hosts and add the IP of the DB servers and run ping module to test the connectivity.
+
+---
+- hosts: aws
+  become: yes
+  roles:
+    - { role: geerlingguy.mysql }
+
+Once Installed, credentials will be in /root/.my.cnf.
+
+For default rolepath, cat /etc/ansible/ansible.cfg | grep -i roles
+
+roles_path    = /etc/ansible/roles
+
+root@controller:/etc/ansible# cat rolescheck.yml
+---
+  - name: checking the roles
+    hosts: web
+    roles:
+     - nginxinstall
+
+
+mkdir myproject/roles 
+ansible-galaxy init mynginx --init-path=myproject/roles --offline
+---
+  - name: Playbook For Testing Role
+    hosts: web
+    roles:
+      - /myproject/roles/mynginx
+      
+Overwrite Variables:
+ansible-playbook -i hosts app-role.yaml --extra-vars "custom_heading=KakkaKakka"
+
+We can also pass vars from Playbooks, but vars in role will take presedence.
+---
+  - name: Playbook For Testing Role
+    hosts: app
+    vars:
+     custom_heading: "Welcome To DevOps B17 Batch Training - Ansible App Servers"
+    roles:
+      - /myroles/mynginx
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#ansible-variable-precedence
+      
+---------------------COLELCTIONS-------------------
+Install MySQL using the Role above and then do the collection below.
+https://www.techbeatly.com/getting-started-with-ansible-collections/
+
+ansible-galaxy collection install community.mysql -p /tmp/mysql
+ansible-galaxy collection install community.mysql -> Default will be /root/.ansible/collections/
+---
+  - name: deploy mysql
+    hosts: aws
+    collections:
+     - community.mysql
+
+    tasks:
+     - name: role
+       community.mysql.mysql_role:   #Module mysql_db in the collection
+        name: mysql_role
+     - name: user
+       community.mysql.mysql_user: #Module mysql_user in the collection
+        name: mysql_use
+     - name: info
+       community.mysql.mysql_db: #Module mysql_user in the collection
+        name: mysql_db
+
+----------------------------------------Ansible-Conditions---------------------------------------------
+docker network create --subnet 172.20.0.0/16 --gateway 172.20.0.254 ansible_nw
+docker run --rm -dit --name controller --hostname controller --network ansible_nw sreeharshav/ubuntu16:ansible2.75_V2
+docker run --rm -dit --name web1 --hostname web1 -p 8000:80 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name web2 --hostname web2 -p 8001:80 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name web3 --hostname web3 -p 8002:80 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name app1 --hostname app1 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name app2 --hostname app2 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name app3 --hostname app3 --network ansible_nw sreeharshav/ubuntu16:withssh2.0_V2
+docker run --rm -dit --name db1 --hostname db1 --network ansible_nw sreeharshav/centos7:withssh2.0_V1
+docker run --rm -dit --name db2 --hostname db2 --network ansible_nw sreeharshav/centos7:withssh2.0_V1
+docker run --rm -dit --name db3 --hostname db3 --network ansible_nw sreeharshav/centos7:withssh2.0_V1
+docker run --rm -dit --name db4 --hostname db4 --network ansible_nw sreeharshav/centos7:withssh2.0_V1
+--------------------------------------------------------------------------------------------------------------
+To configure fact caching using redis, enable it in ansible.cfg as follows:
+apt install python3-pip
+pip3 install redis 
+
+https://gist.github.com/CrackerJackMack/a4e1bf70e1bf73d460b5c97eb645f473
+
+[defaults]
+fact_caching = redis
+fact_caching_prefix = ansible_facts_
+fact_caching_connection = ansiblefacts.qcz1df.ng.0001.use1.cache.amazonaws.com:6379:0
+fact_caching_timeout = 60
+gathering = smart
+
+
+Example:
+[defaults]
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = /tmp/ansible_facts_folder
+fact_caching_timeout = 86400
+
+root@controller:/# ll /tmp/factsjson/
+total 92
+drwxr-xr-x 2 root root  4096 Mar 23 02:13 ./
+drwxrwxrwt 1 root root  4096 Mar 23 02:14 ../
+-rw-r--r-- 1 root root 27335 Mar 23 02:13 web1
+-rw-r--r-- 1 root root 27335 Mar 23 02:13 web2
+-rw-r--r-- 1 root root 27335 Mar 23 02:13 web3
+
+root@controller:/# cat play1.yml
+---
+  - name: Create set of users
+    hosts: all
+    gather_facts: no  #Gather facts are mentioned as NO as we have enabled facts caching. Run setup module first to cache facts.
+    tasks:
+      - name: Create Testusers 1,2,3,4,5
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - debuser1
+            - debuser2
+            - debuser3
+            - debuser4
+            - debuser5
+        when:
+          ansible_os_family == "Debian"
+      - name: Create Testusers 6,7,8,9,10
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - rheluser1
+            - rheluser2
+            - rheluser3
+            - rheluser4
+            - rheluser5
+        when:
+          ansible_os_family == "RedHat"
+------------------------------------------COMPLETED-----------------------------------------------------
+---
+  - name: Playbook to install NGINX in Ubuntu & RedHat
+    hosts: all
+    tasks:
+       - name: Perform APT update
+         shell: apt-get update
+         when: ansible_os_family == "Debian"
+
+       - name: Install Nginx in Ubuntu Servers
+         apt:
+           name: nginx
+           state: present
+         when: ansible_os_family == "Debian"
+
+       - name: Perform APT update
+         shell: service nginx start
+         when: ansible_os_family == "Debian"
+
+       - name: Perform YUM update
+         shell: yum update -y
+         when: ansible_os_family == "RedHat"
+
+       - name: Install epel-release in RedHat Servers
+         yum:
+           name: epel-release
+           state: present
+         when: ansible_os_family == "RedHat"
+
+       - name: Install Nginx in RedHat Servers
+         yum:
+            name: nginx
+            state: present
+         when: ansible_os_family == "RedHat"
+         
+
+
+---
+  - name: Create set of users
+    hosts: all:!db
+    gather_facts: no
+    tasks:
+      - name: Create Ubuntu users 1,2,3,4,5
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - debuser1
+            - debuser2
+            - debuser3
+            - debuser4
+            - debuser5
+        when: #Only works when both below are true
+          - ansible_os_family == "Debian"
+          - ansible_distribution_major_version == "18"
+      - name: Create Testusers 6,7,8,9,10
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - rheluser1
+            - rheluser2
+            - rheluser3
+            - rheluser4
+            - rheluser5
+        when: #Only works when both below are true
+          - ansible_os_family == "RedHat"
+          - ansible_facts['distribution_major_version'] == "6"
+
+
+---
+  - name: Create set of users
+    hosts: all:!db
+    gather_facts: yes
+    tasks:
+      - name: Create Ubuntu users 1,2,3,4,5
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - debuser10
+            - debuser20
+            - debuser30
+            - debuser40
+            - debuser50
+        when: (ansible_os_family == "Debian" and ansible_distribution_major_version == "18") or
+              (ansible_os_family == "Debian" and ansible_distribution_major_version == "16")
+      - name: Create RHEL Users 6,7,8,9,10
+        user: >
+          name={{ item }}
+          shell=/bin/bash
+          password='$1$oEe4m6pU$AAiaKEiYrrcOHW3v3oj7d.'
+        with_items:
+            - rheluser10
+            - rheluser20
+            - rheluser30
+            - rheluser40
+            - rheluser50
+        when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6") or
+              (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+         
+-----------------------COMPLETED----------------------------------------------------------
+
+
+------------------------------------------COMPLETED------------------------------------------------
+
+Variables:
+https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#intro-inventory
+
+Playbook Vars:
+--------------
+root@controller:/# cat play2.yml
+---
+  - name: Testing
+    hosts: all
+    vars:
+      - home: /home/"{{ item }}"
+      - shell: /bin/bash
+    tasks:
+      - name: Create Test users
+        user:
+          name: "{{ item }}"
+          home: "{{ home }}"
+          shell: "{{ shell }}"
+          state: present
+        with_items:
+            - testuser1
+            - testuser2
+            
+-----------------------------------------ROLES-------------------------------------------------
+ANSIBLE COLLETIONS NEEDED ANSIBLE 2.9
+
+ansible-galaxy install geerlingguy.nginx -p /project1/roles
+ansible-galaxy init users --init-path=/project1/roles --offline
+
+ansible-galaxy install geerlingguy.docker --roles-path=/etc/ansible/roles/
+---
+  - name: Install mysql
+    hosts: web1
+    roles:
+      - geerlingguy.docker
+
+-----------------------------------------LINE-IN-FILE-MODULE-------------------------------------------------
+- name: Add deploy user to sudoers
+  lineinfile: dest=/etc/sudoers
+              regexp="{{ ubuntu_common_deploy_user_name }} ALL"
+              line="{{ ubuntu_common_deploy_user_name }} ALL=(ALL) ALL"
+              state=present
+              
+lineinfile
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html
+- name: Ensure SELinux is set to enforcing mode
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: SELINUX=enforcing
+
+-------------------------------------HANDLERS----------------------------------------------------------------------
+---
+  - name: Play for Install Nginx on WebServers
+    hosts: web
+    gather_facts: yes
+    vars:
+      custom_heading: "Hello, Welcome To DevOps In Telugu B18 Training By Sreeharsha Veerapalli"
+      todays_date: "{{ ansible_facts['date_time']['date'] }}"
+      host_name: "{{ ansible_facts['hostname'] }}"
+      fqdn_name: "{{ ansible_facts['fqdn'] }}"
+      ip_address: "{{ ansible_facts['eth0']['ipv4']['address'] }}"
+      cities: ["Delhi","Hyd","Chennai","Pune","Bangalore"]
+      stars: ["Megastar","Superstar","PowerStar","StylistStar"]
+    tasks:
+       - name: Run Apt Update
+         shell: apt update
+       - name: Install Nginx Server
+         apt: >
+           name=nginx
+           state=present
+       - name: Copy the files to index destination folder.
+         template: >
+            src=/tmp/ansibletemplatetesting/index.j2
+            dest=/var/www/html/index.nginx-debian.html
+            owner=root
+            group=root
+            mode=0644
+         notify:
+           - restart nginx
+       - name: Copy the style files to destination folder.
+         copy: >
+            src=/tmp/ansibletemplatetesting/style.css
+            dest=/var/www/html/style.css
+            owner=root
+            group=root
+            mode=0644
+       - name: Copy the javascript files to destination folder.
+         copy: >
+            src=/tmp/ansibletemplatetesting/scorekeeper.js
+            dest=/var/www/html/scorekeeper.js
+            owner=root
+            group=root
+            mode=0644
+    handlers:
+        - name: restart nginx
+          command: service nginx restart
+            
+            
+            
+index.j2 jinja with the html :
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="style.css">
+        <title>Color Game</title>
+</head>
+<body>
+        <h1>{{ custom_heading }}</h1>
+        <h1> Todays date is: {{ todays_date }} </h1>
+        <h1> Server hostname is: {{ host_name }} </h1>
+        <h1> Server FQDN is: {{ fqdn_name }} </h1>
+        <h1> Server IP is: {{ ip_address }} </h1>
+        {% for citi in cities %}
+        <h1>The City Name is : {{ citi }} <h1>
+        {% endfor %}
+        {% for star in stars %}
+        <h1>The Star Name is : {{ star }} <h1>
+        {% endfor %}
+
+       <div id="smallcont">
+                <div></div>
+                <div id="try1">Lets Play</div>
+        </div>
+        <div id="container">
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+        </div>
+
+</body>
+<script type="text/javascript" src="scorekeeper.js"></script>
+</html>
+
+--------------------------------------------------------------------------------------------------
+
+--------------------------------ANSIBLE-TOWER-VIDEOS----------------------------------------------
+https://www.youtube.com/watch?v=wZ_mh4-4HPY&list=PLnrmLjoInKWj4a7xu84_Z0_TiVlDCd0wq
+
+https://www.youtube.com/watch?v=ToXoDdUOzj8&list=PLnrmLjoInKWj4a7xu84_Z0_TiVlDCd0wq&index=2
+
+https://www.youtube.com/watch?v=jq_yzGuKPfA&list=PLnrmLjoInKWj4a7xu84_Z0_TiVlDCd0wq&index=8
+
+https://www.youtube.com/playlist?list=PLnrmLjoInKWj4a7xu84_Z0_TiVlDCd0wq
+
+
+--------FREQUENTLY USED MODULES FOR ADMINISTRATION---------------------------
+
+    
+pre_tasks - > Before Task Execution
+post_tasks -> After Tasks Execution
+            
+            
+            
+            
+            

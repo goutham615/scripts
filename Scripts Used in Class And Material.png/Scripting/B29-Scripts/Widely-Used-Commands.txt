@@ -1,0 +1,93 @@
+----GREP_vs_EGREP--------
+cat /etc/passwd | egrep 'rr|mega'
+cat /etc/passwd | egrep -c '^rr|a$' # Count the result
+cat /etc/passwd | egrep '^rr' | egrep 'sh$
+cat hello | egrep '^AB' | egrep '1$'
+cat hello | egrep '^AB' | egrep '[1-5]$'
+
+--------FIND_du_df_sort_head--------------------
+find / -name *.log
+find / -name *.log | grep -E 'access|error'
+find / -type l # Find all softlinks 
+find / -type f #Find all files
+find / -type d #Find all directories
+
+df -h #Disk Free It tells you the total disk size, space used, space available, usage percentage, and what partition the disk is mounted on.
+
+du #Disk Usage
+du -sh /var/
+du -sh /var/log/
+
+1. How to find files size which is greater than 100MB?
+find . -type f -size 100M
+find . -type f -size +100M
+find . -type f -size -101M
+find / -type f -size +10M -size -20M
+find / -type f -size +10M -size -15M | wc -l
+find / -type f -size +10M -size -15M 2> /dev/null  | wc -l
+for file in $(find / -type f -size +10M -size -15M 2> /dev/null); do du -sh $file; done
+
+2. Find the top 10 files which are using more space?
+cat /etc/passwd | sort
+cat /etc/passwd | sort -r #Reverse
+https://www.cyberciti.biz/faq/how-do-i-find-the-largest-filesdirectories-on-a-linuxunixbsd-filesystem/
+du -hsx -- * | sort -rh | head -10
+
+------------AWK-----------------------
+cat /etc/passwd | awk -F ':' '{print $1 $3 $6}'
+cat /etc/passwd | awk -F ':' '{print $6 $1 $3}'
+cat /etc/passwd | awk -F ':' '{print $1, $3, $6}' #Addres Space
+cat /etc/passwd | awk -F ':' '{print $1, $3, $6}' | tr " " "-"  #Replace Emptyspace
+cat /etc/passwd | awk -F ':' '{$2=$3=$4""; print $0}' #Print all the other columns except 2,3,4.
+cat /etc/passwd | awk '{$3=""; print $0}'
+----------SED_vs_tr--------------------------
+cat /etc/passwd | tr  ":" "-"|tr b A  # Works at character level
+sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/1g" /etc/ssh/sshd_config
+sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/1g" /etc/ssh/sshd_config
+sed -i '10i SUPERSTAR MEGASTAR BURNINGSTAR' /etc/ssh/sshd_config
+
+
+Want to repalce a whole string?
+Want to add string before line 10?
+Want to add string after line 20?
+Want to add string after first occurrence?
+Want to add string after second occurrence?
+
+finding processs port number?
+ps -ef | grep -i nginx | grep -v grep #Dont Display Port Usage.
+netstat -ltnp | grep -w ':80' 
+netstat -nltp | grep -E  ':80|:3306'
+
+lsof command (List Open Files) 
+lsof -u root #Openfiles for user root
+lsof -i TCP:22 #To find out all the running Linux processes of a specific port
+lsof -i TCP:3306
+lsof -i TCP:80
+lsof -i TCP:1-1024
+
+You can find the process/service listening using fuser
+fuser 80/tcp
+fuser 3306/tcp
+
+ps -p 2135 -o comm=
+ps aux --sort -%cpu
+ps aux --sort -%mem
+kill -9 3572
+
+automate disk formating using bootstrap script ?
+
+soft & hard links - ln ?
+
+uniq
+uniq -c helo.txt  | grep -i -w BBBBBBBB # Count Repeated Lines
+uniq -d /etc/passwd #Print repeated lines.
+uniq  -u helo.txt #It prints only the unique lines. 
+
+
+strace
+https://www.tecmint.com/strace-commands-for-troubleshooting-and-debugging-linux/
+
+diff
+https://www.geeksforgeeks.org/diff-command-linux-examples/
+
+

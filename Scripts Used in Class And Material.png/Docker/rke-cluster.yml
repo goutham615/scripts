@@ -1,0 +1,30 @@
+nodes:
+  - address: 54.211.52.195
+    internal_address: 172.16.1.5
+    user: root
+    role: [controlplane,etcd,worker]
+    hostname_override: rke-node-1
+
+  - address: 3.94.82.218
+    internal_address: 172.16.1.99
+    user: root
+    role: [controlplane,worker,etcd]
+    hostname_override: rke-node-2
+
+  - address: 54.211.83.26
+    internal_address: 172.16.1.128
+    user: root
+    role: [controlplane,worker,etcd]
+    hostname_override: rke-node-3
+
+  - address: 3.86.243.77
+    internal_address: 172.16.1.153
+    user: root
+    role: [worker]
+    hostname_override: rke-workernode-1
+
+  - address: 3.84.51.83
+    internal_address: 172.16.1.171
+    user: root
+    role: [worker]
+    hostname_override: rke-workernode-2

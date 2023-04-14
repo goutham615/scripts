@@ -1,0 +1,18 @@
+---
+- hosts: webservers
+  pre_tasks:
+    - name: Disable web server in load balancer
+      community.general.haproxy:
+        state: disabled
+        host: '{{ inventory_hostname_short }}'
+        fail_on_not_found: yes
+      delegate_to: loadbalancer.example.com
+  roles:
+    - full_patches
+  post_tasks:
+    - name: Enable web server in load balancer
+      community.general.haproxy:
+        state: enabled
+        host: '{{ inventory_hostname_short }}'
+        fail_on_not_found: yes
+      delegate_to: loadbalancer.example.com

@@ -1,0 +1,20 @@
+#!/bin/bash
+adduser --disabled-password --gecos "" ansibleadmin
+usermod -aG sudo ansibleadmin
+mkdir .ssh
+touch .ssh/authorized_keys
+echo 'ansibleadmin@ip-10-40-1-11:~$ cat /home/ansibleadmin/.ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5tSlHgHQB6jx2DtHp4ZHRAenlcrIvt81NvVCChrSYI6VsY7pOUM5rNszt+hIeFDd+AHq/xUvYEoCg+dv343vMtDEhtt4jVgZwTE9mFoLWvRUyJNGCFHEpnU3nezByPth4hMSdAK7V462g7vD56wxQCGrm8R/Wx6XCNOWlykf3NtliXvVTxKIrATAuK+CHwUF/YF3ymRqydr4ESgmgprFgKrEYYAqNECR/QJWcmf5dXJSchwOeHQ/GEJUtHT/GSaFtd03VuOyZcpQCBOh/t3MJ58sVoOpus/7cTv2cz1gB4lSsWJyoXSaTRMBbC2a8aJAMiRxecb4SgBUUETcptLmTOoTzT119V+myTwUd8H0WOopbhHh/kY1ycXhZFf7RjCDKdWEApWvRlKTkxjpiG8Ls6jWEC5BVg5dzf8D4sOxEXwe8ZxNP/bLUV+xYYklV/RQ10PgFzJ43pA3snO9s944YmOva7BjnwAnqZPlmg3uNxk5SdKwbwZFrpPGh9vQmawM= ansibleadmin@ip-10-40-1-11' >> .ssh/authorized_keys
+sudo  visudo -f /etc/sudoers
+ansibleadmin ALL=(ALL) NOPASSWD:ALL
+
+https://stackoverflow.com/questions/44734179/specifying-ssh-key-in-ansible-playbook-file
+
+If the use dont exist, we can use the private key:
+ansible -i inventory.yml 18.207.105.169  -u ubuntu --private-key laptopkey.pem -m command -a "sudo apt update" --become
+ansible -i inventory.yml 18.207.105.169  -u ubuntu --private-key laptopkey.pem -m command -a "sudo apt install -y unzip jq nginx" --become
+ansible -i inventory.yml 18.207.105.169  -u ubuntu --private-key laptopkey.pem -m command -a "sudo service nginx start" --become
+
+
+If the adminuser exists:
+ansible -i inventory.yml clients  -m command -a "sudo apt install -y nginx"

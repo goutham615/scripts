@@ -1,0 +1,201 @@
+trigger:
+  branches:
+    include:
+    - master123
+pool:
+  name: MyAppLinuxAgentPool
+  demands:
+  - DOCKER -equals Yes
+  - Terraform -equals Yes
+  - Packer -equals Yes
+stages:
+- stage: BuildingJavaCode
+  jobs:
+  - job: BuildingJavaCodeJob
+    timeoutInMinutes: 10
+    steps:
+    - task: CmdLine@2
+      displayName: 'Display The Build-ID'
+      inputs:
+        script: echo $(Build.BuildId)
+    - task: CmdLine@2
+      displayName: 'List Files & Current Working Directory'
+      inputs:
+        script: ls -al && pwd
+    - task: CmdLine@2
+      displayName: 'Run the build script'
+      inputs:
+        script: ls -al && chmod 700 build.sh && sudo bash ./build.sh && ls -al
+    - task: CmdLine@2
+      displayName: 'List Files & Rename ROOT.war'
+      inputs:
+        script: ls -al && mv ROOT.war ROOT$(Build.BuildId).war && ls -al
+    - task: CmdLine@2
+      displayName: 'Copy WAR to tmp folder'
+      inputs:
+        script: cp ROOT$(Build.BuildId).war /tmp/artifacts && ls -al /tmp/artifacts
+    - task: CopyFiles@2
+      inputs:
+        Contents: 'ROOT$(Build.BuildId).war'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        OverWrite: true
+      displayName: 'Copying WAR file to ArtifactStagingDirector'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'ROOT$(Build.BuildId).war'
+        publishLocation: 'Container'
+      displayName: 'Publishing WAR Artifact.'
+    - task: CopyFiles@2
+      inputs:
+        Contents: 'ROOT$(Build.BuildId).war'
+        TargetFolder: '/tmp/artifacts'
+        OverWrite: true
+      continueOnError: true
+- stage: CopyingArtifactsToAzureAndAws
+  jobs:
+  - job: CopyFilesToAzureBlob
+    timeoutInMinutes: 10
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'devopsb19-azure-connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage blob upload-batch --account-name devopsb19adoartifacts  --account-key $(STORAGE_ACCOUNT_KEY) --destination artifacts --source /tmp/artifacts/
+      displayName: 'Azure Upload artifacts to Azure Blob'
+      continueOnError: true
+    - task: S3Upload@1
+      inputs:
+        awsCredentials: 'devopsb19-aws-connection'
+        regionName: 'us-east-1'
+        bucketName: 'devopsb19artifacts'
+        sourceFolder: '/tmp/artifacts/'
+        globExpressions: 'ROOT$(Build.BuildId).war'
+      displayName: 'AWS Upload artifacts to AWS S3'
+      continueOnError: true
+- stage: BuildDockerImagePushToDockerHubAndAzureACR
+  jobs:
+  - job: BuildIMageAndPushToDockerHub
+    timeoutInMinutes: 10
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'devopsb19-dockerhub-connection'
+        repository: 'sreeharshav/devopsb19ado'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+      displayName: 'Creating & Pushing Docker Image To Docker HUB'
+      continueOnError: true
+  - job: BuildIMageAndPushToAzureACR
+    dependsOn:
+    - BuildIMageAndPushToDockerHub
+    timeoutInMinutes: 10
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker login -u devopsb19 -p $(acrpassword) devopsb19.azurecr.io
+          docker tag sreeharshav/devopsb19ado:$(Build.BuildId) devopsb19.azurecr.io/devopsb19:$(Build.BuildId)
+          docker push devopsb19.azurecr.io/devopsb19:$(Build.BuildId)
+      displayName: 'Creating & Pushing Docker Image To Azure ACR'
+- stage: 'Terraform_Plan_Apply'
+  displayName: 'Planning & Deploying Terraform'
+  jobs:
+  - job: "Terraform_Plan"
+    displayName: 'Terraform_Plan'
+    pool:
+      name: MyAppLinuxAgentPool
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: DownloadSecureFile@1
+      inputs:
+        secureFile: 'backend.json'
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Agent.TempDirectory)'
+        Contents: '**'
+        TargetFolder: '/home/adminsree/myagent/_work/1/s/TerraformInfra'
+    - task: CmdLine@2
+      displayName: 'Initialize_Terraform_Backend'
+      inputs:
+        script: cd TerraformInfra && terraform init -backend-config=backend.json
+    - task: CmdLine@2
+      displayName: 'Perform_Terraform_Plan'
+      inputs:
+        script: cd TerraformInfra &&  terraform plan --var-file test.tfvars -var="aws_access_key=$(access_key)" -var="aws_secret_key=$(secret_key)"
+    - task: CmdLine@2
+      displayName: 'Perform_Terraform_Apply'
+      inputs:
+        script: cd TerraformInfra &&  terraform apply --var-file test.tfvars -var="aws_access_key=$(access_key)" -var="aws_secret_key=$(secret_key)" --auto-approve
+    - task: CmdLine@2
+      displayName: 'Listing_Terraform_Resources'
+      inputs:
+        script: cd TerraformInfra &&  terraform state list
+- stage: 'Terraform_Destroy'
+  displayName: 'Destroying Terraform'
+  jobs:
+  - deployment: "Terraform_Destroy"
+    pool:
+      name: MyAppLinuxAgentPool
+    environment:
+      name: TerraformDestroy
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+            condition: false
+            inputs:
+              repository: none
+          - task: DownloadSecureFile@1
+            inputs:
+              secureFile: 'backend.json'
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Agent.TempDirectory)'
+              Contents: '**'
+              TargetFolder: '/home/adminsree/myagent/_work/1/s/TerraformInfra'
+          - task: CmdLine@2
+            displayName: 'Initialize_Terraform_Backend'
+            inputs:
+              script: cd TerraformInfra &&  terraform init -backend-config=backend.json
+          - task: CmdLine@2
+            displayName: 'Perform_Terraform_Destroy'
+            inputs:
+              script: cd TerraformInfra &&  terraform destroy --var-file test.tfvars -var="aws_access_key=$(access_key)" -var="aws_secret_key=$(secret_key)" --auto-approve
+- stage: DeleteTheRepo
+  jobs:
+  - job: DeleteTheRepoCntent
+    timeoutInMinutes: 10
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: CmdLine@2
+      displayName: 'Remove Files'
+      inputs:
+        script: cd /home/adminsree/myagent/_work/1/s && sudo rm -rf src
+    - task: CmdLine@2
+      displayName: 'Remove Files From tmp Folder'
+      inputs:
+        script: cd /tmp/artifacts && sudo rm -f *.war
+

@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    stages {
+       /* stage ('Invoke_Packer_Pipeline') {
+            when {
+                    expression {
+                        params.CREATE_IMAGE == 'YES'
+                    }
+                }
+            steps {
+                build job: 'Packer-Image-Pipeline'
+            }
+        }*/
+        stage('Clone Git Repo') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'GitHubAccess', url: 'git@github.com:SreeVeerDevOps/devopsb19-multi-branch-pipeline.git']]])
+                sh 'ls -al'
+            }
+        }
+        stage('Terraform Plan') {
+            steps {
+                    sh 'terraform init --backend-config=backend.json'
+                    sh 'terraform plan'
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                    sh 'terraform init --backend-config=backend.json'
+                    sh 'terraform apply --auto-approve'
+                }
+        }
+        stage('Terraform Destroy') {
+            when {
+                    expression {
+                        params.DESTROY == 'YES'
+                    }
+                }
+            steps {
+                    sh 'terraform init --backend-config=backend.json'
+                    sh 'terraform destroy --auto-approve'
+            }
+        }
+    }
+}
